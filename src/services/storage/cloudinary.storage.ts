@@ -25,16 +25,27 @@ export class CloudinaryPDFStorage implements IPDFStorageProvider {
    */
   private configure(): void {
     try {
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+      if (!cloudName || !apiKey || !apiSecret) {
+        throw new Error(
+          'Cloudinary credentials are required. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.',
+        );
+      }
+
       cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dcksabaod',
-        api_key: process.env.CLOUDINARY_API_KEY || '257726425151596',
-        api_secret: process.env.CLOUDINARY_API_SECRET || 'z0oBiqSTNcEhVmbMnVD8wf8jrOc',
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
       });
       this.configured = true;
       console.log('✅ Cloudinary configurado correctamente');
     } catch (error) {
       console.error('❌ Error configurando Cloudinary:', error);
       this.configured = false;
+      throw error;
     }
   }
 
