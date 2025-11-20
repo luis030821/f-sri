@@ -3,7 +3,8 @@ import { convertirFecha, generarClaveAcceso } from '../utils/invoice.utils';
 import { generarXMLFactura } from '../utils/xml.utils';
 import { firmarXML } from '../utils/firma.utils';
 import { enviarComprobanteSRI, RespuestaSRI } from '../utils/sri.utils';
-import { generateInvoicePDF, savePDFToFile } from '../utils/pdf.utils';
+import { generateInvoicePDF } from '../utils/pdf.utils';
+import { PDFStorageFactory } from './storage';
 import Invoice from '../models/Invoice';
 import InvoiceDetail from '../models/InvoiceDetail';
 import InvoicePDF from '../models/InvoicePDF';
@@ -541,6 +542,7 @@ export class InvoiceService {
 
   /**
    * Generates and saves PDF when invoice is approved by SRI
+   * Uses the configured storage provider (Cloudinary, Local, etc.)
    * @param factura The approved invoice
    * @param empresa The issuing company
    * @param cliente The client
@@ -558,6 +560,7 @@ export class InvoiceService {
       const numeroAutorizacion = factura.clave_acceso;
       const fechaAutorizacion = factura.sri_fecha_respuesta || new Date();
 
+      // Preparar datos para generar el PDF
       const pdfData = {
         factura: datosFactura,
         empresa,
@@ -570,30 +573,45 @@ export class InvoiceService {
         fechaAutorizacion,
       };
 
+      // Generar el PDF en memoria
+      console.log(`📄 Generando PDF para factura: ${factura.secuencial}`);
       const pdfBuffer = await generateInvoicePDF(pdfData);
-      const filename = `factura_${factura.secuencial}_${factura.clave_acceso}`;
-      const pdfPath = await savePDFToFile(pdfBuffer, filename);
 
+      // Obtener el proveedor de almacenamiento configurado
+      const storage = PDFStorageFactory.create();
+      const filename = `factura_${factura.secuencial}_${factura.clave_acceso}`;
+
+      // Subir el PDF al proveedor de almacenamiento
+      console.log(`⬆️  Subiendo PDF usando proveedor: ${storage.getProviderName()}`);
+      const uploadResult = await storage.upload(pdfBuffer, filename);
+
+      // Guardar la información del PDF en la base de datos
+      // IMPORTANTE: Ya NO guardamos el pdf_buffer para ahorrar espacio
       const invoicePDF = new InvoicePDF({
         factura_id: factura._id,
         claveAcceso: factura.clave_acceso,
-        pdf_path: pdfPath,
-        pdf_buffer: pdfBuffer,
-        tamano_archivo: pdfBuffer.length,
+        pdf_url: uploadResult.url, // URL pública del PDF
+        pdf_public_id: uploadResult.publicId, // ID para eliminar/gestionar el archivo
+        pdf_provider: uploadResult.provider, // Proveedor usado (cloudinary, local, etc.)
+        tamano_archivo: uploadResult.size,
         numero_autorizacion: numeroAutorizacion,
         fecha_autorizacion: fechaAutorizacion,
         estado: 'GENERADO',
       });
 
       await invoicePDF.save();
+      console.log(`✅ PDF guardado exitosamente: ${uploadResult.url}`);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('❌ Error generating PDF:', error);
 
       try {
+        // Registrar el error en la base de datos
         const errorPDF = new InvoicePDF({
           factura_id: factura._id,
           claveAcceso: factura.clave_acceso,
-          pdf_path: '',
+          pdf_url: '',
+          pdf_public_id: '',
+          pdf_provider: 'error',
           tamano_archivo: 0,
           numero_autorizacion: factura.clave_acceso,
           fecha_autorizacion: new Date(),
@@ -602,7 +620,7 @@ export class InvoiceService {
 
         await errorPDF.save();
       } catch (dbError) {
-        console.error('Error saving PDF error record:', dbError);
+        console.error('❌ Error saving PDF error record:', dbError);
       }
     }
   }
