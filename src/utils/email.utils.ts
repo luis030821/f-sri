@@ -48,6 +48,11 @@ export function generateInvoiceEmailTemplate(
   clientName: string,
   companyName: string,
 ): EmailTemplate {
+  // Validate that pdf_url exists before generating email
+  if (!invoicePDF.pdf_url) {
+    throw new Error('PDF URL no disponible. El PDF debe estar almacenado antes de enviar el email.');
+  }
+
   const subject = `Factura Electrónica - ${invoicePDF.claveAcceso}`;
 
   const html = `
