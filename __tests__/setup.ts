@@ -10,14 +10,18 @@ process.env.MONGO_URI = 'mongodb://localhost:27017/veronica_test';
 if (process.env.CI) {
   // Mock external services in CI
   jest.mock('puppeteer', () => ({
-    launch: jest.fn(() => Promise.resolve({
-      newPage: jest.fn(() => Promise.resolve({
-        setViewport: jest.fn(),
-        setContent: jest.fn(),
-        pdf: jest.fn(() => Promise.resolve(Buffer.from('mock pdf content')))
-      })),
-      close: jest.fn()
-    }))
+    launch: jest.fn(() =>
+      Promise.resolve({
+        newPage: jest.fn(() =>
+          Promise.resolve({
+            setViewport: jest.fn(),
+            setContent: jest.fn(),
+            pdf: jest.fn(() => Promise.resolve(Buffer.from('mock pdf content'))),
+          }),
+        ),
+        close: jest.fn(),
+      }),
+    ),
   }));
 }
 
@@ -30,7 +34,7 @@ beforeAll(() => {
   if (!process.env.DEBUG) {
     console.log = jest.fn();
   }
-  
+
   // Keep error logs for debugging
   console.error = jest.fn((message) => {
     if (process.env.DEBUG) {
@@ -49,4 +53,4 @@ afterAll(() => {
 afterEach(() => {
   // Clear all mocks after each test
   jest.clearAllMocks();
-}); 
+});

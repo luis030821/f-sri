@@ -225,9 +225,7 @@ describe('CloudinaryPDFStorage', () => {
       const storage = new CloudinaryPDFStorage();
       const testBuffer = Buffer.from('test pdf');
 
-      await expect(storage.upload(testBuffer, 'test_invoice')).rejects.toThrow(
-        'Error subiendo PDF a Cloudinary',
-      );
+      await expect(storage.upload(testBuffer, 'test_invoice')).rejects.toThrow('Error subiendo PDF a Cloudinary');
     });
   });
 
