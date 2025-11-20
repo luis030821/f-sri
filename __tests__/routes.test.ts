@@ -279,7 +279,9 @@ describe('Auth endpoints', () => {
       password: 'pass',
       ruc: '1234567890001',
       razon_social: 'Test Company',
-      masterKey: 'test_master_key'
+      masterKey: 'test_master_key',
+      certificate: 'MIIJqQIBAzCCCW8GCSqGSIb3DQEHAaCCCWAEgglcMIIJWDCCBW8GCSqGSIb3', // Mock base64 certificate
+      certificate_password: 'test_cert_password'
     };
 
     const res = await request(app).post('/register').send(registrationData);
@@ -532,7 +534,39 @@ describe('Factura complete endpoint', () => {
   });
 
   it('fails when product not found', async () => {
+    // Configurar todos los mocks necesarios excepto el producto
+    identificationType.findOne.mockResolvedValue(createMockWithToObject({
+      _id: 'typeId1', 
+      codigo: '05', 
+      nombre: 'CEDULA'
+    }));
+    
+    const certB64 = 'Q0VSVElGSUNBRE9fTU9DS19QQVJBX1BSVUVCQVMz';
+    const { encrypt } = require('../src/utils/encryption.utils');
+    
+    issuingCompany.findOne.mockResolvedValue(createMockWithToObject({
+      _id: 'companyId1',
+      ruc: '1799999999001',
+      codigo_establecimiento: '001',
+      punto_emision: '001',
+      tipo_ambiente: 1,
+      tipo_emision: 1,
+      certificate: certB64,
+      certificate_password: encrypt('Pablo2020')
+    }));
+    
+    client.findOne.mockResolvedValue(createMockWithToObject({
+      _id: 'clientId1', 
+      identificacion: '0923456789'
+    }));
+    
+    // Mock de secuencial
+    const mockSort = jest.fn().mockResolvedValue(null);
+    invoice.findOne.mockReturnValue({ sort: mockSort } as any);
+    
+    // El producto no existe (esto causa el error)
     product.findOne.mockResolvedValueOnce(null); 
+    
     const res = await request(app).post('/api/v1/invoice/complete').set('Authorization', authHeader).send(payload);
     expect(res.status).toBe(400); 
     expect(res.body.message).toContain('Product not found: P001'); 
@@ -540,12 +574,48 @@ describe('Factura complete endpoint', () => {
 
   // Test específico para verificar la actualización asíncrona del SRI
   it('correctly sets up procesarEnvioSRI for asynchronous processing', async () => {
-    // Setup
-    const mockFactura = { _id: 'facturaId', sri_estado: 'PENDIENTE', save: jest.fn().mockResolvedValue({}) };
-    const mockEmpresa = { certificatePath: '/tmp/cert.p12', certificatePassword: 'test' };
+    // Configurar todos los mocks necesarios
+    identificationType.findOne.mockResolvedValue(createMockWithToObject({
+      _id: 'typeId1', 
+      codigo: '05', 
+      nombre: 'CEDULA'
+    }));
+    
+    const certB64 = 'Q0VSVElGSUNBRE9fTU9DS19QQVJBX1BSVUVCQVMz';
+    const { encrypt } = require('../src/utils/encryption.utils');
+    
+    issuingCompany.findOne.mockResolvedValue(createMockWithToObject({
+      _id: 'companyId1',
+      ruc: '1799999999001',
+      codigo_establecimiento: '001',
+      punto_emision: '001',
+      tipo_ambiente: 1,
+      tipo_emision: 1,
+      certificate: certB64,
+      certificate_password: encrypt('Pablo2020')
+    }));
+    
+    client.findOne.mockResolvedValue(createMockWithToObject({
+      _id: 'clientId1', 
+      identificacion: '0923456789'
+    }));
+    
+    product.findOne.mockResolvedValue(createMockWithToObject({
+      _id: 'prodId1', 
+      codigo: 'P001', 
+      nombre: 'Producto 1', 
+      precio_venta: 100
+    }));
+    
+    const mockSort = jest.fn().mockResolvedValue(null);
+    invoice.findOne.mockReturnValue({ sort: mockSort } as any);
+    
+    invoice.save.mockImplementation(mockSaveWithToObject());
+    invoiceDetail.save.mockImplementation(mockSaveWithToObject());
     
     // Create a spy on procesarEnvioSRI to observe how it's called
-    const procesarEnvioSRISpy = jest.spyOn(require('../src/services/invoice.service').InvoiceService, 'procesarEnvioSRI');
+    const procesarEnvioSRISpy = jest.spyOn(require('../src/services/invoice.service').InvoiceService, 'procesarEnvioSRI')
+      .mockImplementation(() => Promise.resolve());
     
     // Call the invoice creation endpoint
     const res = await request(app).post('/api/v1/invoice/complete').set('Authorization', authHeader).send(payload);
