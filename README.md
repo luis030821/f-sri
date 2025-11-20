@@ -20,8 +20,8 @@
 - 🔐 **Sistema de Registro Seguro** - Control multi-capa de acceso
 - 📱 **API RESTful Completa** - Documentación con Swagger/OpenAPI
 - 🏢 **Multi-empresa** - Gestión de múltiples empresas emisoras
-- 📄 **PDFs Automáticos** - Generación automática cuando SRI confirma recepción
-- 🔒 **Firma Digital** - Soporte para certificados .p12
+- 📄 **PDFs Automáticos** - Generación y almacenamiento en la nube (Cloudinary/Local)
+- 🔒 **Firma Digital** - Certificado digital en base64 (sin archivos locales)
 - 📧 **Notificaciones Email** - Envío automático de facturas
 - 🧪 **Testing Completo** - Suite de tests automatizados
 
@@ -42,13 +42,13 @@ graph LR
 
 1. **📝 Creación**: Se envía la factura via `/api/v1/invoice/complete`
 2. **📄 XML**: Se genera el XML según normativa del SRI
-3. **🔐 Firma**: Se firma digitalmente con certificado P12
+3. **🔐 Firma**: Se firma digitalmente con el certificado almacenado (base64)
 4. **📤 Envío**: Se envía al SRI (ambiente pruebas o producción)
 5. **✅ Confirmación**: Si SRI responde `"RECIBIDA"`, se ejecuta automáticamente:
    - **📄 Generación de PDF** con formato oficial
-   - **📁 Almacenamiento** en el sistema de archivos
+   - **☁️ Almacenamiento** en el proveedor configurado (Cloudinary por defecto)
    - **📊 Log de éxito**: `✅ FACTURA RECIBIDA POR SRI - ID: [id], Clave: [clave], Secuencial: [seq]`
-6. **📥 Disponibilidad**: PDF disponible via API para descarga inmediata
+6. **📥 Disponibilidad**: PDF disponible via API con URL pública del proveedor
 
 ## 🛠️ Tecnologías
 
@@ -59,6 +59,7 @@ graph LR
 - **Testing**: Jest + Supertest
 - **Firma Digital**: node-forge
 - **PDF**: Puppeteer
+- **Almacenamiento**: Cloudinary (por defecto) / Local
 
 ## 📦 Instalación Rápida
 
@@ -73,6 +74,7 @@ npm install
 # Configurar variables de entorno
 cp .env.example .env
 # Editar .env con tus configuraciones
+# Nota: Necesitarás una cuenta de Cloudinary (gratuita) para almacenar PDFs
 
 # Ejecutar en desarrollo
 npm run dev
@@ -103,9 +105,29 @@ NODE_ENV=development
 SRI_ENVIRONMENT=1  # 1=Pruebas, 2=Producción
 SRI_RECEPCION_URL_PRUEBAS=https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl
 SRI_RECEPCION_URL_PRODUCCION=https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl
+
+# Almacenamiento de PDFs (cloudinary o local)
+PDF_STORAGE_PROVIDER=cloudinary  # Por defecto: cloudinary
+
+# Cloudinary (para almacenar PDFs en la nube)
+CLOUDINARY_CLOUD_NAME=tu_cloud_name
+CLOUDINARY_API_KEY=tu_api_key
+CLOUDINARY_API_SECRET=tu_api_secret
 ```
 
 ### Primer Registro (Administrador)
+
+El certificado digital (archivo .p12) debe ser convertido a **base64** y enviado como una cadena de texto:
+
+```bash
+# Convertir certificado .p12 a base64 (Linux/Mac)
+base64 -i certificado.p12 -o certificado_base64.txt
+
+# O en PowerShell (Windows)
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("certificado.p12"))
+```
+
+Luego, enviar el registro con el certificado en base64:
 
 ```bash
 POST /register
@@ -115,8 +137,8 @@ POST /register
   "masterKey": "clave_maestra_super_secreta",
   "ruc": "1234567890001",
   "razon_social": "Mi Empresa S.A.",
-  "certificate": "base64_del_certificado_p12",
-  "certificatePassword": "password_del_certificado"
+  "certificate": "MIIJqQIBAzCCCW8GCSqGSIb3DQEHAa...",  // Certificado .p12 en base64
+  "certificate_password": "password_del_certificado"
 }
 ```
 
@@ -173,7 +195,7 @@ GET  /api/v1/product           # Productos
 
 ### 📄 Gestión de PDFs
 
-Los PDFs se generan **automáticamente** cuando el SRI confirma la recepción (`estado: "RECIBIDA"`). No requiere intervención manual.
+Los PDFs se generan **automáticamente** cuando el SRI confirma la recepción (`estado: "RECIBIDA"`) y se almacenan en el proveedor configurado (Cloudinary por defecto). No requiere intervención manual.
 
 ```bash
 # Verificar si una factura tiene PDF generado

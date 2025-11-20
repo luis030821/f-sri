@@ -89,9 +89,8 @@ router.post('/register', async (req, res) => {
     punto_emision,
     tipo_ambiente,
     tipo_emision,
-    certificate,
-    certificatePassword,
-    certificatePath,
+    certificate, 
+    certificate_password, 
     // Security
     masterKey,
     invitationCode,
@@ -109,6 +108,20 @@ router.post('/register', async (req, res) => {
   // Validate RUC format
   if (!isValidRUC(ruc)) {
     return res.status(400).json({ message: 'Formato de RUC inválido. Debe tener 13 dígitos y terminar en 001' });
+  }
+
+  // Validate certificate is provided
+  if (!certificate) {
+    return res.status(400).json({ 
+      message: 'Certificado digital requerido. Debe enviar el archivo .p12 convertido a base64' 
+    });
+  }
+
+  // Validate certificate password
+  if (!certificate_password) {
+    return res.status(400).json({ 
+      message: 'Contraseña del certificado requerida (certificate_password)' 
+    });
   }
 
   try {
@@ -130,15 +143,8 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ message: 'Empresa con este RUC ya está registrada' });
     }
 
-    // Process certificate
-    let certBase64 = certificate;
-    if (certificatePath) {
-      const fs = require('fs');
-      certBase64 = fs.readFileSync(certificatePath).toString('base64');
-    }
-
     // Encrypt certificate password
-    const encryptedPass = certificatePassword ? encrypt(certificatePassword) : undefined;
+    const encryptedPassword = encrypt(certificate_password);
 
     // Create user
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -155,11 +161,11 @@ router.post('/register', async (req, res) => {
       email: company_email || email,
       codigo_establecimiento: codigo_establecimiento || '001',
       punto_emision: punto_emision || '001',
-      tipo_ambiente: tipo_ambiente || 1, // Default to test environment
-      tipo_emision: tipo_emision || 1, // Default to normal emission
-      certificate: certBase64,
-      certificate_password: encryptedPass,
-      user_id: user._id, // Link company to user
+      tipo_ambiente: tipo_ambiente || 1,
+      tipo_emision: tipo_emision || 1, 
+      certificate: certificate, // Certificado en base64 (se almacena tal cual)
+      certificate_password: encryptedPassword, 
+      user_id: user._id, 
     });
     await company.save();
 

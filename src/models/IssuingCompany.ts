@@ -48,7 +48,7 @@ const schema = new Schema<IIssuingCompany>(
 );
 
 // Index for better performance
-schema.index({ ruc: 1 });
+// El índice de ruc ya se crea automáticamente con unique: true
 schema.index({ user_id: 1 });
 
 export default model<IIssuingCompany>('IssuingCompany', schema);
