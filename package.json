@@ -15,7 +15,9 @@
     "lint:fix": "prettier --write src/**/*.ts",
     "typecheck": "tsc --noEmit",
     "validate": "npm run typecheck && npm run lint && npm run test:ci",
-    "format": "prettier --write \"src/**/*.ts\" \"__tests__/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\" \"__tests__/**/*.ts\"",
+    "migrate:pdfs": "ts-node scripts/migrate-pdfs.ts",
+    "migrate:pdfs:dry-run": "DRY_RUN=true ts-node scripts/migrate-pdfs.ts"
   },
   "keywords": [
     "facturacion-electronica",
@@ -47,6 +49,7 @@
     "@xmldom/xmldom": "^0.8.10",
     "axios": "^1.9.0",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.5.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

@@ -63,6 +63,15 @@ export function generateInvoiceEmailTemplate(
         .content { margin-bottom: 20px; }
         .footer { font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 10px; }
         .invoice-details { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .download-button {
+          display: inline-block;
+          padding: 12px 24px;
+          background-color: #007bff;
+          color: white;
+          text-decoration: none;
+          border-radius: 5px;
+          margin: 15px 0;
+        }
       </style>
     </head>
     <body>
@@ -71,10 +80,10 @@ export function generateInvoiceEmailTemplate(
           <h2>Factura Electrónica</h2>
           <p>Estimado/a ${clientName},</p>
         </div>
-        
+
         <div class="content">
-          <p>Adjunto encontrará su factura electrónica emitida por <strong>${companyName}</strong>.</p>
-          
+          <p>Su factura electrónica ha sido emitida por <strong>${companyName}</strong>.</p>
+
           <div class="invoice-details">
             <strong>Detalles de la Factura:</strong><br>
             <strong>Clave de Acceso:</strong> ${invoicePDF.claveAcceso}<br>
@@ -82,12 +91,16 @@ export function generateInvoiceEmailTemplate(
             <strong>Fecha de Autorización:</strong> ${invoicePDF.fecha_autorizacion.toLocaleDateString('es-EC')}<br>
             <strong>Fecha de Generación PDF:</strong> ${invoicePDF.fecha_generacion.toLocaleDateString('es-EC')}
           </div>
-          
+
+          <p style="text-align: center;">
+            <a href="${invoicePDF.pdf_url}" class="download-button">Descargar Factura PDF</a>
+          </p>
+
           <p>Por favor, conserve este documento para sus registros contables.</p>
-          
+
           <p>Si tiene alguna consulta sobre esta factura, no dude en contactarnos.</p>
         </div>
-        
+
         <div class="footer">
           <p>Este es un mensaje automático. Por favor, no responda a este correo.</p>
           <p>Factura generada por Veronica-EC - Sistema de Facturación Electrónica Libre</p>
@@ -99,21 +112,23 @@ export function generateInvoiceEmailTemplate(
 
   const text = `
     Factura Electrónica
-    
+
     Estimado/a ${clientName},
-    
-    Adjunto encontrará su factura electrónica emitida por ${companyName}.
-    
+
+    Su factura electrónica ha sido emitida por ${companyName}.
+
     Detalles de la Factura:
     Clave de Acceso: ${invoicePDF.claveAcceso}
     Número de Autorización: ${invoicePDF.numero_autorizacion}
     Fecha de Autorización: ${invoicePDF.fecha_autorizacion.toLocaleDateString('es-EC')}
     Fecha de Generación PDF: ${invoicePDF.fecha_generacion.toLocaleDateString('es-EC')}
-    
+
+    Descargar PDF: ${invoicePDF.pdf_url}
+
     Por favor, conserve este documento para sus registros contables.
-    
+
     Si tiene alguna consulta sobre esta factura, no dude en contactarnos.
-    
+
     Este es un mensaje automático. Por favor, no responda a este correo.
     Factura generada por Veronica-EC - Sistema de Facturación Electrónica Libre
   `;
@@ -123,6 +138,13 @@ export function generateInvoiceEmailTemplate(
 
 /**
  * Prepares email configuration for sending
+ *
+ * NOTA: Ya no adjuntamos el PDF directamente en el email.
+ * En su lugar, el email incluye un enlace de descarga a la URL pública del PDF.
+ * Esto reduce el tamaño de los emails y mejora la velocidad de envío.
+ *
+ * Si necesitas adjuntar el PDF directamente, puedes descargarlo desde pdf_url
+ * usando axios o fetch y agregarlo como attachment.
  */
 export function prepareEmailConfig(
   invoicePDF: IInvoicePDF,
@@ -136,16 +158,11 @@ export function prepareEmailConfig(
     text: emailTemplate.text,
   };
 
-  // Add PDF attachment if buffer is available
-  if (invoicePDF.pdf_buffer) {
-    config.attachments = [
-      {
-        filename: `factura_${invoicePDF.claveAcceso}.pdf`,
-        content: invoicePDF.pdf_buffer,
-        contentType: 'application/pdf',
-      },
-    ];
-  }
+  // NOTA: Ya no adjuntamos el PDF porque ya no guardamos pdf_buffer
+  // El email ahora incluye un enlace de descarga a invoicePDF.pdf_url
+  // Si en el futuro necesitas adjuntar el PDF, puedes:
+  // 1. Descargar el PDF desde invoicePDF.pdf_url usando axios
+  // 2. Agregarlo como attachment
 
   return config;
 }
