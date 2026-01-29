@@ -1,0 +1,113 @@
+version: '3.9'
+
+services:
+  # =============================================
+  # MongoDB - Base de Datos
+  # =============================================
+  mongodb:
+    image: mongo:7.0-alpine
+    container_name: f-sri-mongodb
+    restart: unless-stopped
+    ports:
+      - '${MONGO_PORT:-27017}:27017'
+    environment:
+      # Usuario y contraseña de MongoDB
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-sriuser}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-sripassword}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-f-sri}
+    volumes:
+      # Volumen para persistencia de datos
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      # Script de inicialización (opcional)
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - f-sri-network
+    healthcheck:
+      test:
+        - CMD
+        - /bin/sh
+        - -c
+        - mongo -u ${MONGO_USER:-sriuser} -p ${MONGO_PASSWORD:-sripassword} --authenticationDatabase admin --eval "db.adminCommand('ping')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # =============================================
+  # Aplicación F-SRI
+  # =============================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: f-sri-app
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3000}:3000'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      # Servidor
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3000}
+
+      # Base de Datos
+      MONGO_URI: mongodb://${MONGO_USER:-sriuser}:${MONGO_PASSWORD:-sripassword}@mongodb:27017/${MONGO_DB_NAME:-f-sri}?authSource=admin
+
+      # Seguridad y Autenticación
+      JWT_SECRET: ${JWT_SECRET:-cambiar_en_produccion_con_valor_seguro}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-cambiar_en_produccion_con_valor_de_32_caracteres}
+
+      # Registro de Usuarios
+      MASTER_REGISTRATION_KEY: ${MASTER_REGISTRATION_KEY:-cambiar_en_produccion}
+      ALLOWED_RUCS: ${ALLOWED_RUCS:-}
+      INVITATION_CODES: ${INVITATION_CODES:-}
+      DISABLE_REGISTRATION: ${DISABLE_REGISTRATION:-false}
+
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:4200,http://localhost:3000}
+      CORS_DISABLED: ${CORS_DISABLED:-false}
+
+      # Correo Electrónico
+      EMAIL_SERVICE: ${EMAIL_SERVICE:-gmail}
+      EMAIL_USER: ${EMAIL_USER:-tu_correo@gmail.com}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-tu_contraseña_o_app_password}
+
+      # Integración SRI
+      SRI_ENVIRONMENT: ${SRI_ENVIRONMENT:-1}
+      SRI_RECEPCION_URL_PRUEBAS: ${SRI_RECEPCION_URL_PRUEBAS:-https://celinium.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl}
+      SRI_RECEPCION_URL_PRODUCCION: ${SRI_RECEPCION_URL_PRODUCCION:-https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl}
+
+      # Almacenamiento de PDFs
+      PDF_STORAGE_PROVIDER: ${PDF_STORAGE_PROVIDER:-local}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+
+    volumes:
+      # Volumen para almacenamiento local de PDFs (si se usa local)
+      - ./storage/pdfs:/app/storage/pdfs
+      # Volumen para logs
+      - ./logs:/app/logs
+
+    networks:
+      - f-sri-network
+
+    # Archivo de log
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  f-sri-network:
+    driver: bridge

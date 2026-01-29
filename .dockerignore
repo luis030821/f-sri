@@ -1,0 +1,76 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local
+.env.*.local
+
+# Testing
+__tests__
+*.test.ts
+*.spec.ts
+jest.config.js
+coverage
+
+# Build
+dist
+build
+*.tsbuildinfo
+
+# Documentation
+README*.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+CORS_SETUP.md
+CURL_EXAMPLES.md
+README_PDF*.md
+DOCKER_DEPLOY.md
+*.pdf
+
+# Environment
+.env
+.env.example
+.env.docker
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Storage
+storage/pdfs/*
+!storage/pdfs/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Example files
+example_pdf
+
+# Root scripts
+scripts
+nodemon.json
+
+# Temporary
+tmp
+temp
+*.tmp
