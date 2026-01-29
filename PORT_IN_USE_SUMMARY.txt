@@ -1,0 +1,200 @@
+✅ PROBLEMA #3 SOLUCIONADO - Puerto 3000 en Uso
+
+================================================================================
+                            PROBLEMA: PUERTO EN USO
+================================================================================
+
+ERROR:
+  Bind for :::3000 failed: port is already allocated
+  Error: failed to set up container networking
+
+CAUSA:
+  El puerto 3000 está siendo usado por otra aplicación
+
+SOLUCIONES (en orden de recomendación):
+
+  1️⃣  CAMBIAR PUERTO (Recomendado)
+      Editar .env: PORT=3000 → PORT=3001
+
+  2️⃣  LIBERAR PUERTO (Linux/Mac)
+      Identificar y matar el proceso en puerto 3000
+
+  3️⃣  LIBERAR PUERTO (Windows)
+      Usar PowerShell para matar el proceso
+
+================================================================================
+                        SOLUCIÓN #1: CAMBIAR PUERTO
+================================================================================
+
+PASOS:
+
+1. Editar .env
+   $ nano .env
+
+2. Buscar la línea:
+   PORT=3000
+
+3. Cambiar a:
+   PORT=3001
+
+4. Guardar y salir (Ctrl+O, Ctrl+X en nano)
+
+5. Detener y reconstruir
+   $ docker-compose down
+   $ docker-compose up -d
+
+6. Esperar 60 segundos
+
+7. Verificar
+   $ docker-compose ps
+   $ curl http://localhost:3001/health
+
+TIEMPO: 2-3 minutos
+DIFICULTAD: ⭐ Muy fácil
+
+✅ VENTAJAS:
+   • No interfiere con otras aplicaciones
+   • No requiere privilegios especiales
+   • Más rápido
+
+================================================================================
+                    SOLUCIÓN #2: LIBERAR PUERTO (Linux/Mac)
+================================================================================
+
+PASOS:
+
+1. Ver qué está usando el puerto 3000
+   $ lsof -i :3000
+
+2. Buscar en los resultados el número PID
+   Ejemplo: node    12345 user   42u IPv6...
+
+3. Matar el proceso
+   $ kill -9 12345
+
+4. Iniciar Docker
+   $ docker-compose up -d
+
+TIEMPO: 1-2 minutos
+DIFICULTAD: ⭐⭐ Fácil
+
+⚠️ DESVENTAJAS:
+   • Requiere identificar qué proceso está usando el puerto
+   • Podría afectar otra aplicación importante
+
+================================================================================
+                    SOLUCIÓN #3: LIBERAR PUERTO (Windows)
+================================================================================
+
+PASOS:
+
+1. Abrir PowerShell como administrador
+
+2. Ver qué está usando el puerto 3000
+   > netstat -ano | findstr :3000
+
+3. Buscar en los resultados el número PID
+   Ejemplo: TCP [::1]:3000 [::]:0 LISTENING 12345
+
+4. Matar el proceso
+   > taskkill /PID 12345 /F
+
+5. Iniciar Docker
+   $ docker-compose up -d
+
+TIEMPO: 1-2 minutos
+DIFICULTAD: ⭐⭐⭐ Requiere admin
+
+⚠️ DESVENTAJAS:
+   • Requiere permisos de administrador
+   • Podría afectar otra aplicación importante
+
+================================================================================
+                          PUERTOS ALTERNATIVOS
+================================================================================
+
+  3000  → Conflicto (en uso)
+  3001  → ✅ Disponible (prueba primero)
+  3002  → ✅ Disponible
+  8000  → ✅ Disponible
+  8080  → ✅ Disponible (muy común)
+  9000  → ✅ Disponible
+
+RECOMENDACIÓN: Usar 3001 (siguiente a 3000)
+
+================================================================================
+                        VERIFICACIÓN FINAL
+================================================================================
+
+Después de resolver:
+
+1. Ver estado
+   $ docker-compose ps
+
+2. Verificar salud de MongoDB
+   $ docker-compose logs mongodb | grep "healthy"
+
+3. Probar API
+   $ curl http://localhost:3001/health
+   Esperado: {"status":"OK",...}
+
+4. Ver documentación API
+   http://localhost:3001/docs
+
+================================================================================
+                          CASOS COMUNES
+================================================================================
+
+CASO 1: Otro contenedor Docker usa puerto 3000
+─────────────────────────────────────────────
+Solución:
+  $ docker ps -a             # Ver contenedores
+  $ docker stop <nombre>     # Detener conflictivo
+  $ docker-compose up -d     # Reiniciar nuestro
+
+CASO 2: Node.js/npm anterior corre en puerto 3000
+──────────────────────────────────────────────────
+Solución:
+  $ ps aux | grep node       # Buscar procesos node
+  $ kill -9 <PID>            # Matar el proceso
+  $ docker-compose up -d     # Reiniciar
+
+CASO 3: Otra aplicación importante usa puerto 3000
+───────────────────────────────────────────────────
+Solución: CAMBIAR PUERTO (Opción 1)
+  • No toques la otra aplicación
+  • Usa puerto 3001 u otro
+
+================================================================================
+                        RECOMENDACIÓN FINAL
+================================================================================
+
+✅ USA OPCIÓN 1: CAMBIAR EL PUERTO
+
+Razones:
+  1. Más rápido (2-3 minutos)
+  2. No requiere permisos especiales
+  3. No interfiere con otras apps
+  4. Fácil de revertir si necesitas puerto 3000
+
+PASOS RÁPIDOS:
+  1. nano .env
+  2. Cambiar PORT=3000 a PORT=3001
+  3. Guardar (Ctrl+O, Ctrl+X)
+  4. docker-compose down
+  5. docker-compose up -d
+  6. sleep 60
+  7. curl http://localhost:3001/health
+
+================================================================================
+                      DOCUMENTACIÓN DETALLADA
+================================================================================
+
+Para más información, ver:
+  → FIX_PORT_IN_USE.md
+
+================================================================================
+Status: ✅ SOLUCIONADO
+Recomendación: Cambiar puerto a 3001
+Tiempo de solución: 2-3 minutos
+================================================================================

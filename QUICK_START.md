@@ -50,18 +50,67 @@ docker-compose up -d
 ### Paso 5: Verificar
 
 ```bash
-# Ver estado
+# Ver estado (esperar ~60 segundos para que MongoDB sea healthy)
 docker-compose ps
 
-# Health check
+# Ver logs de MongoDB si hay problemas
+docker-compose logs mongodb
+
+# Health check de la API (cuando MongoDB esté healthy)
 curl http://localhost:3000/health
 
-# Ver logs
+# Ver logs de la app
 docker-compose logs -f app
 
 # API docs
 open http://localhost:3000/docs
 ```
+
+---
+
+## ⚠️ Si Puerto 3000 Está en Uso
+
+Si ves: `Bind for :::3000 failed: port is already allocated`
+
+```bash
+# 1. Cambiar puerto en .env
+nano .env
+# Cambiar: PORT=3000
+# A: PORT=3001
+
+# 2. Reconstruir
+docker-compose down
+docker-compose up -d
+
+# 3. Acceder con nuevo puerto
+curl http://localhost:3001/health
+```
+
+Ver: `FIX_PORT_IN_USE.md` para más opciones.
+
+---
+
+## ⚠️ Si MongoDB Falla (unhealthy)
+
+Si ves: `Container f-sri-mongodb is unhealthy`
+
+```bash
+# 1. Ver logs de MongoDB
+docker-compose logs mongodb
+
+# 2. Esperar más tiempo (hasta 60 segundos)
+# MongoDB puede tardar en iniciar
+
+# 3. Si sigue fallando, reconstruir:
+docker-compose down -v
+docker-compose build --no-cache
+docker-compose up -d
+
+# 4. Esperar y verificar:
+docker-compose ps  # MongoDB debe mostrar "healthy"
+```
+
+Ver: `FIX_MONGODB_HEALTH.md` para más detalles.
 
 ---
 
