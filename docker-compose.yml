@@ -5,7 +5,7 @@ services:
   # MongoDB - Base de Datos
   # =============================================
   mongodb:
-    image: mongo:7.0-alpine
+    image: mongo:8.2.4
     container_name: f-sri-mongodb
     restart: unless-stopped
     ports:
