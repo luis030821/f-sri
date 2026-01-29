@@ -26,13 +26,19 @@ services:
     healthcheck:
       test:
         - CMD
-        - /bin/sh
-        - -c
-        - mongo -u ${MONGO_USER:-sriuser} -p ${MONGO_PASSWORD:-sripassword} --authenticationDatabase admin --eval "db.adminCommand('ping')"
+        - mongosh
+        - --eval
+        - "db.adminCommand('ping')"
+        - --authenticationDatabase
+        - admin
+        - -u
+        - ${MONGO_USER:-sriuser}
+        - -p
+        - ${MONGO_PASSWORD:-sripassword}
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
-      start_period: 40s
+      start_period: 60s
 
   # =============================================
   # Aplicación F-SRI
