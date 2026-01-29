@@ -7,10 +7,11 @@ WORKDIR /app
 
 # Copiar archivos de dependencias
 COPY package*.json ./
+COPY package-lock.json* ./
 COPY tsconfig.json ./
 
-# Instalar dependencias
-RUN npm ci
+# Instalar dependencias (npm install es más flexible que npm ci)
+RUN npm install
 
 # Copiar código fuente
 COPY src ./src
@@ -33,9 +34,10 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 # Copiar package.json para instalación de dependencias de producción
 COPY package*.json ./
+COPY package-lock.json* ./
 
 # Instalar solo dependencias de producción
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 # Copiar código compilado desde el builder
 COPY --from=builder /app/dist ./dist
